@@ -1,33 +1,46 @@
 import { useState } from "react";
-import reactLogo from "./assets/react.svg";
-import viteLogo from "/vite.svg";
+import Smartcar from "@smartcar/auth";
+import axios from "axios";
+import Connect from "./components/Connect";
+
 import "./App.css";
 
 function App() {
-  const [count, setCount] = useState(0);
+  const [vehicle, setVehicle] = useState();
+
+  // Vite environment variables
+  const clientId = import.meta.env.VITE_CLIENT_ID;
+  const redirectUri = import.meta.env.VITE_REDIRECT_URI;
+  const serverUrl = import.meta.env.VITE_SERVER;
+
+  const onComplete = async (err, code, state) => {
+    return await axios
+      .get(`${serverUrl}/exchange?code=${code}`)
+      .then((_) => {
+        return axios.get(`${serverUrl}/vehicle`);
+      })
+      .then((res) => {
+        setVehicle(res.data);
+      });
+  };
+
+  const smartCar = new Smartcar({
+    clientId: clientId,
+    redirectUri: redirectUri,
+    scope: ["read_vehicle_info"],
+    mode: "simulated",
+    onComplete,
+  });
+
+  const authorize = () => {
+    smartCar.openDialog({ forcePrompt: true });
+  };
 
   return (
     <>
       <div>
-        <a href="https://vite.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
+        <Connect onClick={authorize} />
       </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.jsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
     </>
   );
 }
